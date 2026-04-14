@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بيت أنيق - Home Nest | متجرك للأناقة المنزلية</title>
+    
+    <!-- استيراد الخطوط -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- مكتبات التشغيل الأساسية -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- مكتبة الأيقونات -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            scroll-behavior: smooth; 
+            background: #FCFCFA; 
+            overflow-x: hidden;
+            color: #1a1a1a;
+        }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+        .animate-scale-up { animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-bounce-in { animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes bounceIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-15px) rotate(1deg); } }
+        
+        input[type='range']::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 20px; height: 20px;
+            background: #2C4C3B; border-radius: 50%;
+            cursor: pointer; border: 3px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #2C4C3B; border-radius: 10px; }
+        
+        .hero-gradient {
+            background: radial-gradient(circle at 70% 30%, rgba(44, 76, 59, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // مكوّن مساعد لعرض الأيقونات
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        // --- البيانات الأساسية ---
+        const CATEGORIES = [
+            { id: 'furniture', name: 'أثاث', icon: 'armchair' },
+            { id: 'cleaning', name: 'أدوات تنظيف', icon: 'sparkles' },
+            { id: 'organizers', name: 'أدوات تنظيم', icon: 'package' },
+            { id: 'kitchen', name: 'أدوات مطبخ', icon: 'coffee' },
+        ];
+
+        const PRODUCTS = [
+            { id: 1, name: 'ممسحة أرضيات احترافية', category: 'cleaning', price: 85, oldPrice: 110, rating: 4.8, image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=400', desc: 'ممسحة دوارة مع دلو عصر ذكي لتنظيف أسهل وأسرع لجميع أنواع الأرضيات.' },
+            { id: 2, name: 'منظم أدراج بلاستيكي', category: 'organizers', price: 45, rating: 4.5, image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=400', desc: 'طقم من 6 قطع لتنظيم أدراج المطبخ أو المكتب بشكل أنيق.' },
+            { id: 3, name: 'سلة غسيل قابلة للطي', category: 'organizers', price: 60, oldPrice: 75, rating: 4.2, image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&q=80&w=400', desc: 'سلة قماشية متينة موفرة للمساحة وسهلة التخزين.' },
+            { id: 4, name: 'فرشاة تنظيف متعددة الاستخدام', category: 'cleaning', price: 25, rating: 4.7, image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&q=80&w=400', desc: 'رأس دوار وشعيرات خشنة للأماكن الصعبة.' },
+            { id: 5, name: 'طقم علب حفظ طعام', category: 'kitchen', price: 120, rating: 4.9, image: 'https://images.unsplash.com/photo-1510251197878-a2e6d2cb590c?auto=format&fit=crop&q=80&w=400', desc: '10 قطع زجاجية محكمة الإغلاق وآمنة للاستخدام في الميكروويف.' },
+            { id: 6, name: 'منظم أحذية 5 طبقات', category: 'organizers', price: 95, rating: 4.3, image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80&w=400', desc: 'هيكل معدني قوي يتسع لـ 15 زوجاً من الأحذية.' },
+            { id: 7, name: 'طاولة قهوة خشبية عصرية', category: 'furniture', price: 350, oldPrice: 400, rating: 4.9, image: 'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?auto=format&fit=crop&q=80&w=400', desc: 'طاولة قهوة بتصميم عصري وأنيق تناسب غرف المعيشة الحديثة.' },
+            { id: 8, name: 'كرسي استرخاء مبطن', category: 'furniture', price: 550, rating: 4.8, image: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&q=80&w=400', desc: 'كرسي قماشي مريح جداً يوفر لك زاوية استرخاء مثالية في منزلك.' }
+        ];
+
+        // --- المكوّنات ---
+
+        const Logo = ({ onClick, isDark = false }) => (
+            <div className="flex items-center gap-3.5 group cursor-pointer" onClick={onClick}>
+                <div className="relative flex items-center justify-center w-12 h-12">
+                    <div className={`absolute inset-0 ${isDark ? 'bg-white' : 'bg-[#2C4C3B]'} rounded-2xl rotate-[10deg] opacity-10 group-hover:rotate-[20deg] transition-all duration-300`}></div>
+                    <Icon name="home" className={`${isDark ? 'text-[#4ade80]' : 'text-[#2C4C3B]'} relative z-10`} size={28} />
+                </div>
+                <div className="flex flex-col text-right justify-center">
+                    <span className={`text-[28px] font-black ${isDark ? 'text-white' : 'text-[#222222]'} tracking-tight mb-1`}>
+                        بيت <span className={isDark ? 'text-[#4ade80]' : 'text-[#2C4C3B]'}>أنيق</span>
+                    </span>
+                    <span className={`text-[11px] font-black ${isDark ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-[0.3em] leading-none`}>
+                        Home <span className={isDark ? 'text-white' : 'text-[#2C4C3B]'}>Nest</span>
+                    </span>
+                </div>
+            </div>
+        );
+
+        function App() {
+            const [currentPage, setCurrentPage] = useState('home');
+            const [navData, setNavData] = useState(null);
+            const [cart, setCart] = useState([]);
+            const [activeModal, setActiveModal] = useState(null);
+            const [notif, setNotif] = useState(null);
+            const [activeCat, setActiveCat] = useState('all');
+
+            const navigate = (page, data = null) => {
+                const validPages = ['home', 'shop', 'cart', 'product', 'checkout', 'success', 'about', 'contact', 'policy', 'faq'];
+                if (!validPages.includes(page)) {
+                    setCurrentPage('404');
+                } else {
+                    setCurrentPage(page);
+                    setNavData(data);
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const addToCart = (product) => {
+                setCart(prev => {
+                    const exists = prev.find(i => i.id === product.id);
+                    if (exists) return prev.map(i => i.id === product.id ? {...i, quantity: i.quantity + 1} : i);
+                    return [...prev, {...product, quantity: 1}];
+                });
+                setNotif(`${product.name} تمت إضافته للسلة`);
+                setTimeout(() => setNotif(null), 3000);
+            };
+
+            const totalPrice = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+
+            // --- المكونات الفرعية المشتركة ---
+            const ProductCard = ({ product }) => (
+                <div className="group bg-white rounded-[40px] border border-gray-100 overflow-hidden hover:shadow-2xl transition-all flex flex-col h-full relative border-b-8 hover:border-[#2C4C3B]">
+                    <div className="relative aspect-[4/5] overflow-hidden" onClick={() => navigate('product', product)}>
+                        <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 cursor-pointer" alt={product.name} />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-10">
+                            <button className="bg-white p-3.5 rounded-full hover:bg-[#2C4C3B] hover:text-white transition-all shadow-lg"><Icon name="eye" /></button>
+                            <button className="bg-white p-3.5 rounded-full hover:text-red-500 transition-all shadow-lg"><Icon name="heart" /></button>
+                        </div>
+                    </div>
+                    <div className="p-7 flex-1 flex flex-col text-right space-y-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                            <Icon name="star" size={14} className="fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-black text-gray-700">{product.rating}</span>
+                        </div>
+                        <h3 className="font-black text-gray-900 text-lg line-clamp-1">{product.name}</h3>
+                        <p className="text-2xl font-black text-[#2C4C3B]">{product.price} ر.س</p>
+                        <button onClick={(e) => {e.stopPropagation(); addToCart(product);}} className="w-full mt-auto bg-gray-950 text-white font-black py-4 rounded-[20px] hover:bg-[#2C4C3B] transition-all flex items-center justify-center gap-2">
+                            أضف للسلة <Icon name="shopping-bag" size={18}/>
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // --- الصفحات الجديدة ---
+
+            const AboutPage = () => (
+                <div className="animate-fade-in py-20 space-y-24">
+                    <section className="max-w-7xl mx-auto px-4 text-center space-y-8">
+                        <div className="inline-block px-6 py-2 bg-[#F4F7F5] text-[#2C4C3B] rounded-full text-sm font-black uppercase tracking-widest">قصتنا وأهدافنا</div>
+                        <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-tight">بيت أنيق... <br/><span className="text-[#2C4C3B]">أكثر من مجرد متجر.</span></h1>
+                        <p className="max-w-3xl mx-auto text-xl text-gray-500 font-bold leading-relaxed">
+                            بدأنا برؤية بسيطة: تحويل كل منزل في المملكة إلى واحة من النظام والجمال. نحن نؤمن بأن المحيط المُنظم يخلق ذهناً صافياً وحياةً أسعد.
+                        </p>
+                    </section>
+                    
+                    <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                        <div className="space-y-8 text-right">
+                            <h2 className="text-4xl font-black text-gray-900">لماذا تختار بيت أنيق؟</h2>
+                            <ul className="space-y-6">
+                                <li className="flex items-start gap-5">
+                                    <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon name="shield-check" className="text-[#2C4C3B]"/></div>
+                                    <div><h4 className="font-black text-xl mb-1">جودة عالمية</h4><p className="text-gray-500 font-bold">ننتقي أفضل الماركات والمنتجات التي خضعت لاختبارات الجودة الصارمة.</p></div>
+                                </li>
+                                <li className="flex items-start gap-5">
+                                    <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon name="zap" className="text-[#FF8C42]"/></div>
+                                    <div><h4 className="font-black text-xl mb-1">حلول ذكية</h4><p className="text-gray-500 font-bold">نبحث دائماً عن أدوات مبتكرة توفر عليك الوقت والجهد في المهام اليومية.</p></div>
+                                </li>
+                                <li className="flex items-start gap-5">
+                                    <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0"><Icon name="heart" className="text-blue-600"/></div>
+                                    <div><h4 className="font-black text-xl mb-1">رضا العميل أولاً</h4><p className="text-gray-500 font-bold">فريقنا يسهر على راحتكم من لحظة الطلب وحتى وصوله لباب بيتكم.</p></div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="relative">
+                            <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=800" className="rounded-[60px] shadow-2xl" />
+                            <div className="absolute -bottom-10 -right-10 bg-white p-10 rounded-[40px] shadow-2xl border text-center">
+                                <p className="text-4xl font-black text-[#2C4C3B]">+15K</p>
+                                <p className="text-gray-400 font-bold">عميل سعيد</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+
+            const ContactPage = () => (
+                <div className="animate-fade-in py-20">
+                    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-20">
+                        <div className="space-y-12 text-right order-2 lg:order-1">
+                            <div className="space-y-4">
+                                <h1 className="text-5xl font-black text-gray-900">تواصل معنا</h1>
+                                <p className="text-gray-400 font-bold text-lg">يسعدنا دائماً سماع استفساراتكم واقتراحاتكم.</p>
+                            </div>
+                            <form className="space-y-6 bg-white p-10 rounded-[45px] shadow-xl border border-gray-100">
+                                <div className="space-y-2"><label className="text-sm font-black text-gray-600 pr-2">الاسم الكامل</label><input className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 text-right font-bold focus:ring-2 focus:ring-[#2C4C3B]/20" /></div>
+                                <div className="space-y-2"><label className="text-sm font-black text-gray-600 pr-2">البريد الإلكتروني</label><input type="email" className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 text-right font-bold focus:ring-2 focus:ring-[#2C4C3B]/20" /></div>
+                                <div className="space-y-2"><label className="text-sm font-black text-gray-600 pr-2">الرسالة</label><textarea className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 text-right font-bold h-32 focus:ring-2 focus:ring-[#2C4C3B]/20"></textarea></div>
+                                <button type="button" className="w-full bg-[#2C4C3B] text-white py-5 rounded-[22px] font-black text-lg shadow-xl shadow-green-900/10">إرسال الرسالة</button>
+                            </form>
+                        </div>
+                        <div className="space-y-10 order-1 lg:order-2">
+                            <div className="bg-[#050B15] text-white p-12 rounded-[50px] space-y-10 shadow-2xl">
+                                <h3 className="text-2xl font-black border-b border-white/10 pb-6">معلومات التواصل</h3>
+                                <ul className="space-y-8">
+                                    <li className="flex items-center justify-end gap-6">
+                                        <div className="text-right"><p className="font-black">العنوان الرئيسي</p><p className="text-gray-400 text-sm">المملكة العربية السعودية، الرياض، حي النخيل</p></div>
+                                        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center shadow-inner"><Icon name="map-pin"/></div>
+                                    </li>
+                                    <li className="flex items-center justify-end gap-6">
+                                        <div className="text-right"><p className="font-black">رقم الهاتف</p><p className="text-gray-400 text-sm">966500000000+</p></div>
+                                        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center shadow-inner"><Icon name="phone"/></div>
+                                    </li>
+                                    <li className="flex items-center justify-end gap-6">
+                                        <div className="text-right"><p className="font-black">البريد الإلكتروني</p><p className="text-gray-400 text-sm">support@homenest.com</p></div>
+                                        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center shadow-inner"><Icon name="mail"/></div>
+                                    </li>
+                                </ul>
+                                <div className="pt-10 flex justify-center gap-6 border-t border-white/10">
+                                    <Icon name="facebook" className="cursor-pointer hover:text-[#2C4C3B]" />
+                                    <Icon name="twitter" className="cursor-pointer hover:text-[#2C4C3B]" />
+                                    <Icon name="instagram" className="cursor-pointer hover:text-[#2C4C3B]" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const PolicyPage = () => (
+                <div className="animate-fade-in py-20 max-w-4xl mx-auto px-4 text-right space-y-16">
+                    <h1 className="text-5xl font-black text-gray-900 border-r-8 border-[#2C4C3B] pr-6">السياسات والأحكام</h1>
+                    
+                    <div className="space-y-8">
+                        <div className="bg-white p-10 rounded-[40px] border border-gray-100 shadow-sm space-y-4">
+                            <h3 className="text-2xl font-black flex items-center justify-end gap-3 text-[#2C4C3B]"><Icon name="truck"/> سياسة الشحن</h3>
+                            <p className="text-gray-500 font-bold leading-relaxed">
+                                نلتزم بتوصيل طلباتكم في أسرع وقت ممكن. التوصيل داخل مدينة الرياض يتم خلال 24 ساعة، وباقي مناطق المملكة خلال 48-72 ساعة كحد أقصى. الشحن مجاني لجميع الطلبات التي تتجاوز قيمتها 300 ريال سعودي.
+                            </p>
+                        </div>
+                        
+                        <div className="bg-white p-10 rounded-[40px] border border-gray-100 shadow-sm space-y-4">
+                            <h3 className="text-2xl font-black flex items-center justify-end gap-3 text-[#FF8C42]"><Icon name="rotate-ccw"/> سياسة الاسترجاع والاستبدال</h3>
+                            <p className="text-gray-500 font-bold leading-relaxed">
+                                رضاكم هو هدفنا. يمكنكم طلب استبدال أو استرجاع المنتج خلال 7 أيام من تاريخ الاستلام، بشرط أن يكون المنتج في حالته الأصلية وبتغليفه الأصلي. يتحمل المتجر كافة التكاليف في حال وجود خلل مصنعي.
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-10 rounded-[40px] border border-gray-100 shadow-sm space-y-4">
+                            <h3 className="text-2xl font-black flex items-center justify-end gap-3 text-blue-600"><Icon name="lock"/> الخصوصية والأمان</h3>
+                            <p className="text-gray-500 font-bold leading-relaxed">
+                                نحن نحترم خصوصيتكم تماماً. كافة بياناتكم الشخصية ومعلومات الدفع مشفرة بنظام SSL العالمي ولا يتم مشاركتها مع أي طرف ثالث تحت أي ظرف من الظروف.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const FaqPage = () => {
+                const faqs = [
+                    { q: 'كم يستغرق توصيل الطلب؟', a: 'يتم توصيل الطلبات داخل مدينة الرياض خلال 24-48 ساعة، بينما يستغرق التوصيل لباقي مدن ومناطق المملكة من 3 إلى 5 أيام عمل كحد أقصى.' },
+                    { q: 'هل يمكنني إرجاع أو استبدال المنتج؟', a: 'نعم بالتأكيد! يمكنك طلب استرجاع أو استبدال أي منتج خلال 7 أيام من تاريخ الاستلام، بشرط أن يكون بحالته الأصلية وفي غلافه الأصلي دون أن يتم استخدامه.' },
+                    { q: 'ما هي طرق الدفع المتاحة لديكم؟', a: 'نوفر خيارات دفع متعددة وآمنة تشمل: الدفع عبر البطاقات الائتمانية (فيزا، ماستركارد)، بطاقات مدى، خدمة Apple Pay، بالإضافة إلى خيار الدفع عند الاستلام لبعض المنتجات.' },
+                    { q: 'هل المنتجات المعروضة أصلية؟', a: 'نضمن لك في "بيت أنيق" أن جميع منتجاتنا المعروضة أصلية 100% ومستوردة من أفضل العلامات التجارية الموثوقة عالمياً ومحلياً لضمان الجودة.' },
+                    { q: 'كيف يمكنني تتبع حالة طلبي؟', a: 'يمكنك تتبع طلبك بكل سهولة من خلال النقر على خيار "تتبع طلبك" الموجود في أعلى الصفحة الرئيسية وفي الفوتر أدناه، وإدخال رقم الطلب الخاص بك لتصلك التفاصيل.' }
+                ];
+
+                return (
+                    <div className="animate-fade-in py-20 max-w-4xl mx-auto px-4 text-right space-y-16">
+                        <div className="space-y-4">
+                            <h1 className="text-5xl font-black text-gray-900 border-r-8 border-[#2C4C3B] pr-6">الأسئلة الشائعة</h1>
+                            <p className="text-gray-500 font-bold text-lg pr-6">جمعنا لك الإجابات على أكثر الأسئلة التي تصلنا لنسهل عليك تجربة التسوق في بيت أنيق.</p>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            {faqs.map((faq, idx) => (
+                                <div key={idx} className="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <h3 className="text-xl font-black text-gray-900 mb-4 flex items-center justify-end gap-3">
+                                        {faq.q}
+                                        <div className="w-8 h-8 bg-[#F4F7F5] rounded-full flex items-center justify-center text-[#2C4C3B] shrink-0">
+                                            <Icon name="help-circle" size={18}/>
+                                        </div>
+                                    </h3>
+                                    <p className="text-gray-500 font-bold leading-relaxed pr-11 border-r-2 border-gray-100 mr-4">{faq.a}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            const NotFoundPage = () => (
+                <div className="animate-fade-in py-32 text-center space-y-10 px-4">
+                    <div className="text-[120px] font-black text-gray-100 relative">
+                        404
+                        <div className="absolute inset-0 flex items-center justify-center text-4xl text-[#2C4C3B]">أووبس!</div>
+                    </div>
+                    <h2 className="text-4xl font-black text-gray-900">هذه الصفحة قد طارت بعيداً...</h2>
+                    <p className="text-gray-400 font-bold text-xl">يبدو أنك سلكت طريقاً خاطئاً، لا تقلق دعنا نعدك لمنزلك الأنيق.</p>
+                    <button onClick={() => navigate('home')} className="bg-[#2C4C3B] text-white px-12 py-5 rounded-3xl font-black shadow-xl shadow-green-900/20 active:scale-95">العودة للرئيسية</button>
+                </div>
+            );
+
+            // --- عرض المحتوى الرئيسي ---
+
+            const renderContent = () => {
+                switch(currentPage) {
+                    case 'home': return (
+                        <div className="animate-fade-in space-y-24 pb-20">
+                            {/* Hero Section */}
+                            <section className="relative min-h-[600px] flex items-center overflow-hidden hero-gradient">
+                                <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-16 relative z-10 w-full">
+                                    <div className="flex-1 text-right space-y-8 lg:max-w-2xl">
+                                        <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white rounded-full shadow-lg border border-gray-100 animate-bounce-in">
+                                            <Icon name="sparkles" size={20} className="text-orange-500" />
+                                            <span className="text-[#2C4C3B] text-sm font-black uppercase tracking-widest">خيارك الأول لمنزل عصري</span>
+                                        </div>
+                                        <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-[1.15]">حوّل منزلك إلى <br/><span className="text-[#2C4C3B] italic px-2">مساحة مريحة</span> <br/>بأناقة ذكية.</h1>
+                                        <p className="text-gray-500 text-xl font-bold leading-relaxed">أفضل الأدوات والمنظمات العالمية التي تجمع بين الجودة والتصميم، لتنعم بحياة أسهل.</p>
+                                        <div className="flex gap-5 pt-6 justify-end">
+                                            <button onClick={() => navigate('shop')} className="bg-[#2C4C3B] hover:bg-[#3A6356] text-white px-12 py-5 rounded-[22px] font-black text-xl flex items-center gap-3 shadow-2xl active:scale-95 transition-all">تسوق الآن <Icon name="arrow-left" /></button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 relative w-full flex justify-center lg:justify-end mt-12 lg:mt-0">
+                                        <div className="relative w-full max-w-md h-[450px] flex justify-center items-center">
+                                            {/* الصورة الأساسية برابط خارجي لكي تظهر في المعاينة */}
+                                            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover rounded-[40px] shadow-2xl animate-float" alt="منزل عصري" />
+                                            
+                                            {/* بطاقة الدفع الآمن */}
+                                            <div className="absolute -bottom-6 right-4 lg:-right-6 bg-white/95 backdrop-blur-lg p-5 rounded-[28px] shadow-2xl border border-gray-100 flex items-center gap-4 animate-bounce-in z-20">
+                                                <div className="text-right">
+                                                    <p className="text-lg font-black text-gray-900">دفع فوري آمن</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">نظام حماية وتشفير SSL</p>
+                                                </div>
+                                                <div className="w-12 h-12 bg-orange-100 text-[#FF8C42] rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200/50"><Icon name="shield-check" size={24}/></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Features */}
+                            <section className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+                                {[{i:'truck', t:'شحن سريع', d:'خلال 24-48 ساعة', c:'emerald'}, {i:'shield-check', t:'ضمان ذهبي', d:'منتجات أصلية 100%', c:'orange'}, {i:'credit-card', t:'دفع آمن', d:'خيارات دفع متعددة', c:'blue'}, {i:'headphones', t:'دعم ذكي', d:'متاحون على مدار الساعة', c:'purple'}].map((f,idx) => (
+                                    <div key={idx} className="bg-white p-10 rounded-[40px] border border-gray-50 text-center space-y-4 hover:shadow-xl transition-all duration-500">
+                                        <div className={`w-20 h-20 mx-auto rounded-[25px] flex items-center justify-center shadow-inner ${f.c === 'emerald' ? 'bg-[#F4F7F5] text-[#2C4C3B]' : f.c === 'orange' ? 'bg-orange-50 text-orange-600' : f.c === 'blue' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}><Icon name={f.i} size={32}/></div>
+                                        <h4 className="font-black text-gray-900 text-xl">{f.t}</h4>
+                                        <p className="text-sm text-gray-400 font-bold leading-relaxed">{f.d}</p>
+                                    </div>
+                                ))}
+                            </section>
+
+                            {/* Products Grid */}
+                            <section className="max-w-7xl mx-auto px-4 space-y-16">
+                                <div className="flex justify-between items-end border-b-2 border-gray-50 pb-8">
+                                   <button onClick={() => navigate('shop')} className="text-[#2C4C3B] font-black flex items-center gap-2 hover:translate-x-[-8px] transition-transform">عرض كل المنتجات <Icon name="arrow-left" size={18}/></button>
+                                   <h2 className="text-4xl font-black text-gray-900">الأكثر مبيعاً</h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                                    {PRODUCTS.map(p => <ProductCard key={p.id} product={p} />)}
+                                </div>
+                            </section>
+                        </div>
+                    );
+                    case 'shop': {
+                        const filteredProducts = activeCat === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === activeCat);
+                        return (
+                            <div className="max-w-7xl mx-auto px-4 py-20 animate-fade-in text-right">
+                                <h2 className="text-4xl font-black mb-10 border-r-8 border-[#2C4C3B] pr-6">متجر المنتجات</h2>
+                                
+                                {/* شريط التصنيفات البارز */}
+                                <div className="mb-16">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-2xl font-black text-gray-800">تصفح الأقسام</h3>
+                                        <span className="text-sm font-bold text-gray-400">اختر الفئة المناسبة لك</span>
+                                    </div>
+                                    <div className="flex overflow-x-auto pb-6 gap-5 justify-start custom-scrollbar" style={{ scrollSnapType: 'x mandatory' }}>
+                                        {/* بطاقة الكل */}
+                                        <button 
+                                            onClick={() => setActiveCat('all')} 
+                                            className={`flex-shrink-0 flex flex-col items-center justify-center gap-4 w-36 h-36 rounded-[35px] border-2 transition-all duration-300 scroll-snap-align-start ${activeCat === 'all' ? 'bg-[#2C4C3B] text-white border-[#2C4C3B] shadow-2xl shadow-green-900/30 -translate-y-2' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:bg-gray-50 hover:-translate-y-1'}`}
+                                        >
+                                            <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center transition-colors ${activeCat === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                                <Icon name="layout-grid" size={32} />
+                                            </div>
+                                            <span className="font-black text-base">الكل</span>
+                                        </button>
+
+                                        {/* بطاقات باقي التصنيفات */}
+                                        {CATEGORIES.map(cat => (
+                                            <button 
+                                                key={cat.id}
+                                                onClick={() => setActiveCat(cat.id)} 
+                                                className={`flex-shrink-0 flex flex-col items-center justify-center gap-4 w-36 h-36 rounded-[35px] border-2 transition-all duration-300 scroll-snap-align-start ${activeCat === cat.id ? 'bg-[#2C4C3B] text-white border-[#2C4C3B] shadow-2xl shadow-green-900/30 -translate-y-2' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:bg-gray-50 hover:-translate-y-1'}`}
+                                            >
+                                                <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center transition-colors ${activeCat === cat.id ? 'bg-white/20 text-white' : 'bg-[#F4F7F5] text-[#2C4C3B]'}`}>
+                                                    <Icon name={cat.icon} size={32} />
+                                                </div>
+                                                <span className="font-black text-base">{cat.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+                                    {filteredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                                </div>
+                                {filteredProducts.length === 0 && (
+                                    <div className="text-center py-20 bg-white rounded-[40px] border border-gray-100 shadow-sm mt-8">
+                                        <Icon name="package-open" size={72} className="mx-auto text-gray-200 mb-6" />
+                                        <h3 className="text-2xl font-black text-gray-400">لا توجد منتجات في هذا التصنيف حالياً</h3>
+                                        <p className="text-gray-400 font-bold mt-2">نعمل على إضافة المزيد من المنتجات قريباً.</p>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+                    case 'cart': return (
+                        <div className="max-w-7xl mx-auto px-4 py-20 animate-fade-in text-right">
+                             <h1 className="text-4xl font-black text-gray-900 mb-12">سلة المشتريات</h1>
+                             {cart.length === 0 ? (
+                                <div className="bg-white p-24 rounded-[60px] text-center space-y-8 border-2 border-dashed border-gray-100">
+                                    <Icon name="shopping-bag" size={64} className="mx-auto text-gray-200" />
+                                    <h3 className="text-2xl font-black text-gray-400">سلتك لا تزال خالية</h3>
+                                    <button onClick={() => navigate('shop')} className="bg-[#2C4C3B] text-white px-12 py-5 rounded-2xl font-black shadow-lg">ابدأ التسوق</button>
+                                </div>
+                             ) : (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                                    <div className="lg:col-span-2 space-y-6">
+                                        {cart.map(item => (
+                                            <div key={item.id} className="bg-white p-8 rounded-[40px] border border-gray-100 flex items-center gap-8 shadow-sm">
+                                                <img src={item.image} className="w-24 h-24 rounded-3xl object-cover" alt={item.name} />
+                                                <div className="flex-1 text-right">
+                                                    <p className="font-black text-xl">{item.name}</p>
+                                                    <p className="text-[#2C4C3B] font-black">{item.price} ر.س</p>
+                                                </div>
+                                                <div className="flex flex-col items-center gap-4">
+                                                    <button onClick={() => setCart(cart.filter(i => i.id !== item.id))} className="text-red-400 p-3 hover:bg-red-50 rounded-xl transition-all"><Icon name="trash-2" /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="bg-white p-10 rounded-[45px] border shadow-2xl space-y-8 sticky top-40">
+                                        <h3 className="text-2xl font-black border-b pb-4">ملخص الطلب</h3>
+                                        <div className="flex justify-between text-2xl font-black text-gray-900 pt-4 border-t"><span>{totalPrice} ر.س</span><span>الإجمالي</span></div>
+                                        <button onClick={() => navigate('checkout')} className="w-full bg-[#2C4C3B] text-white py-6 rounded-[22px] font-black text-lg shadow-xl shadow-green-900/20 active:scale-95 transition-all">إتمام الطلب</button>
+                                    </div>
+                                </div>
+                             )}
+                        </div>
+                    );
+                    case 'product': return (
+                        <div className="max-w-7xl mx-auto px-4 py-20 animate-fade-in flex flex-col lg:flex-row gap-20 text-right">
+                             <div className="flex-1"><img src={navData.image} className="w-full aspect-square rounded-[60px] object-cover shadow-2xl border-8 border-white" alt={navData.name} /></div>
+                             <div className="flex-1 space-y-10 pt-6 text-right">
+                                <div className="space-y-4">
+                                    <h1 className="text-6xl font-black text-gray-900 leading-tight">{navData.name}</h1>
+                                    <div className="flex items-center justify-end gap-4">
+                                        <span className="text-5xl font-black text-[#2C4C3B]">{navData.price} ر.س</span>
+                                        {navData.oldPrice && <span className="text-2xl text-gray-300 line-through font-extrabold">{navData.oldPrice} ر.س</span>}
+                                    </div>
+                                </div>
+                                <p className="text-gray-500 text-xl font-bold leading-relaxed">{navData.desc} منتج عالي الجودة مصمم خصيصاً لراحتكم وأناقة منزلكم.</p>
+                                <button onClick={() => addToCart(navData)} className="w-full bg-[#2C4C3B] text-white py-6 rounded-[30px] font-black text-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-5">أضف للسلة <Icon name="shopping-bag" size={28}/></button>
+                             </div>
+                        </div>
+                    );
+                    case 'checkout': return (
+                        <div className="max-w-4xl mx-auto py-32 text-center space-y-10 animate-bounce-in px-4">
+                            <div className="w-32 h-32 bg-[#F4F7F5] text-[#2C4C3B] rounded-[45px] flex items-center justify-center mx-auto shadow-inner"><Icon name="check-circle" size={72}/></div>
+                            <h1 className="text-5xl font-black">تم الطلب بنجاح!</h1>
+                            <p className="text-gray-400 text-xl font-bold leading-relaxed">شكراً لثقتك ببيت أنيق. سنقوم بتوصيل طلبك خلال 24-48 ساعة.</p>
+                            <button onClick={() => navigate('home')} className="bg-[#2C4C3B] text-white px-16 py-5 rounded-3xl font-black text-xl shadow-2xl hover:scale-105 transition-all">العودة للرئيسية</button>
+                        </div>
+                    );
+                    case 'about': return <AboutPage />;
+                    case 'contact': return <ContactPage />;
+                    case 'policy': return <PolicyPage />;
+                    case 'faq': return <FaqPage />;
+                    case '404': return <NotFoundPage />;
+                    default: return <NotFoundPage />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+                        <div className="bg-[#2C4C3B] text-white py-2 px-4 text-[11px] font-bold">
+                            <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
+                                <div className="flex gap-5">
+                                    <button onClick={() => setActiveModal('track')} className="hover:text-orange-200 transition-colors">تتبع طلبك</button>
+                                    <button onClick={() => setActiveModal('help')} className="hover:text-orange-200 transition-colors">المساعدة</button>
+                                </div>
+                                <div className="flex items-center gap-1 font-black leading-none"><Icon name="smartphone" size={12}/> 966500000000+</div>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center w-full">
+                            <div className="flex items-center gap-8 flex-1">
+                                <Logo onClick={() => navigate('home')} />
+                                <nav className="hidden lg:flex items-center gap-8 text-sm font-black text-gray-500">
+                                    <button onClick={() => navigate('home')} className={currentPage === 'home' ? 'text-[#2C4C3B] border-b-2 border-[#2C4C3B] pb-1' : 'hover:text-[#2C4C3B]'}>الرئيسية</button>
+                                    <button onClick={() => navigate('shop')} className={currentPage === 'shop' ? 'text-[#2C4C3B] border-b-2 border-[#2C4C3B] pb-1' : 'hover:text-[#2C4C3B]'}>المتجر</button>
+                                    <button onClick={() => navigate('about')} className={currentPage === 'about' ? 'text-[#2C4C3B] border-b-2 border-[#2C4C3B] pb-1' : 'hover:text-[#2C4C3B]'}>من نحن</button>
+                                    <button onClick={() => navigate('contact')} className={currentPage === 'contact' ? 'text-[#2C4C3B] border-b-2 border-[#2C4C3B] pb-1' : 'hover:text-[#2C4C3B]'}>تواصل معنا</button>
+                                </nav>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setActiveModal('user')} className="p-2 text-gray-500 hover:text-[#2C4C3B] transition-all"><Icon name="user" size={26}/></button>
+                                <button onClick={() => navigate('cart')} className="relative p-2.5 bg-gray-100 rounded-2xl hover:bg-[#2C4C3B] hover:text-white transition-all shadow-sm">
+                                    <Icon name="shopping-bag" size={26}/>
+                                    {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">{cart.length}</span>}
+                                </button>
+                                <button className="lg:hidden p-2 text-gray-500"><Icon name="menu" size={30}/></button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="flex-1">{renderContent()}</main>
+
+                    <footer className="bg-[#050B15] text-white pt-24 pb-12">
+                        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-16 border-b border-white/5 pb-20 text-right">
+                            <div className="space-y-8 md:col-span-1">
+                                <Logo isDark={true} />
+                                <p className="text-gray-400 font-bold leading-relaxed">بيت أنيق هو وجهتكم لكل ما يخص تنظيم ونظافة منازلكم بأحدث الأدوات العصرية والمبتكرة لتنعموا بحياة مريحة.</p>
+                                <div className="flex justify-end gap-5">
+                                    <Icon name="facebook" className="cursor-pointer hover:text-[#2C4C3B] transition-colors" />
+                                    <Icon name="twitter" className="cursor-pointer hover:text-[#2C4C3B] transition-colors" />
+                                    <Icon name="instagram" className="cursor-pointer hover:text-[#2C4C3B] transition-colors" />
+                                </div>
+                            </div>
+                            <div className="space-y-8">
+                                <h4 className="text-xl font-black border-r-4 border-orange-500 pr-4">روابط سريعة</h4>
+                                <ul className="space-y-4 text-gray-400 font-extrabold text-sm">
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('home')}>الرئيسية</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('about')}>قصتنا (من نحن)</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('contact')}>اتصل بنا</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('policy')}>سياسة الشحن</li>
+                                </ul>
+                            </div>
+                            <div className="space-y-8">
+                                <h4 className="text-xl font-black border-r-4 border-[#2C4C3B] pr-4">خدمة العملاء</h4>
+                                <ul className="space-y-4 text-gray-400 font-extrabold text-sm">
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => setActiveModal('track')}>تتبع طلبك</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('policy')}>سياسة الاسترجاع</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => setActiveModal('help')}>المساعدة</li>
+                                    <li className="cursor-pointer hover:text-white transition-colors" onClick={() => navigate('faq')}>الأسئلة الشائعة</li>
+                                </ul>
+                            </div>
+                            <div className="space-y-8">
+                                <h4 className="text-xl font-black border-r-4 border-white pr-4">النشرة البريدية</h4>
+                                <p className="text-gray-400 font-bold text-sm leading-relaxed">اشترك لتصلك أحدث العروض والمنتجات الحصرية فور صدورها في متجرنا.</p>
+                                <div className="bg-white/5 p-2 rounded-2xl flex items-center gap-2 border border-white/10 group focus-within:border-[#2C4C3B] transition-all">
+                                    <button className="bg-[#2C4C3B] text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-[#3A6356] transition-all">اشترك</button>
+                                    <input type="email" placeholder="بريدك الإلكتروني" className="flex-1 bg-transparent border-none text-right text-sm text-white focus:ring-0" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-4 mt-12 flex flex-col md:flex-row justify-between items-center gap-8 opacity-60">
+                             <div className="flex gap-6 grayscale hover:grayscale-0 transition-all cursor-pointer">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4 brightness-0 invert" />
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5 brightness-0 invert" />
+                                <div className="text-[10px] font-black border border-white px-1.5 rounded-md flex items-center h-5">MADA</div>
+                                <div className="text-[10px] font-black border border-white px-1.5 rounded-md flex items-center h-5">Apple Pay</div>
+                             </div>
+                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">© 2024 Home Nest Saudi Arabia. Created for Excellence.</p>
+                        </div>
+                    </footer>
+
+                    {/* بوت الدردشة الذكي التفاعلي */}
+                    <div className="fixed bottom-6 left-6 z-[150]">
+                        <button onClick={() => setActiveModal('help')} className="bg-[#2C4C3B] text-white p-5 rounded-full shadow-[0_20px_50px_rgba(44,76,59,0.4)] animate-float border-4 border-white hover:scale-110 transition-all flex items-center gap-3">
+                            <Icon name="message-circle" size={32}/>
+                            <span className="hidden md:inline font-black text-sm">دردش معنا</span>
+                        </button>
+                    </div>
+
+                    {/* المودالز (النوافذ المنبثقة) */}
+                    {activeModal && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+                            <div className="bg-white rounded-[50px] p-12 max-w-lg w-full text-center space-y-8 shadow-2xl relative border border-white/20 animate-scale-up">
+                                <button onClick={() => setActiveModal(null)} className="absolute top-10 left-10 text-gray-400 hover:text-gray-900 transition-colors p-3 hover:bg-gray-100 rounded-full"><Icon name="x" size={30}/></button>
+                                <div className="w-28 h-28 bg-[#F4F7F5] text-[#2C4C3B] rounded-[40px] flex items-center justify-center mx-auto shadow-inner">
+                                    {activeModal === 'user' ? <Icon name="user" size={56}/> : activeModal === 'track' ? <Icon name="package" size={56}/> : <Icon name="headphones" size={56}/>}
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-4xl font-black text-gray-900">
+                                        {activeModal === 'user' ? 'مرحباً بك مجدداً' : activeModal === 'track' ? 'أين وصل طلبي؟' : 'مركز المساعدة'}
+                                    </h3>
+                                    <p className="text-gray-400 font-extrabold text-lg">
+                                        {activeModal === 'user' ? 'سجل دخولك للوصول إلى طلباتك وعناوينك المحفوظة.' : activeModal === 'track' ? 'أدخل رقم الطلب (مثلاً: HN-2024) لمتابعة حالة الشحن.' : 'نحن هنا لخدمتك 24 ساعة، اترك استفسارك وسنتواصل معك فوراً.'}
+                                    </p>
+                                </div>
+                                <div className="space-y-5">
+                                    <input type="text" placeholder={activeModal === 'track' ? 'رقم الطلب' : 'البريد الإلكتروني / رقم الجوال'} className="w-full bg-gray-50 border-none rounded-3xl py-6 px-10 text-right font-black text-lg focus:ring-2 focus:ring-[#2C4C3B]/20 shadow-inner" />
+                                    <button className="w-full bg-[#2C4C3B] text-white py-6 rounded-[28px] font-black text-xl shadow-2xl shadow-green-900/20 active:scale-95 transition-all" onClick={() => setActiveModal(null)}>متابعة</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* نظام الإشعارات */}
+                    {notif && (
+                        <div className="fixed bottom-10 right-10 z-[300] animate-bounce-in bg-[#2C4C3B] text-white px-8 py-4 rounded-[20px] shadow-2xl font-black text-sm flex items-center gap-3 border border-green-400/30">
+                            <Icon name="check-circle" size={20} />
+                            {notif}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
